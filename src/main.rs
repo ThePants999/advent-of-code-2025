@@ -11,5 +11,5 @@ fn main() {
     let days: Vec<Box<dyn Day>> = vec![
         Box::new(day01::Day01 {})
     ];
-    run_all(&days);
+    run_all("2025", &days);
 }
