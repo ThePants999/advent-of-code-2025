@@ -1,6 +1,6 @@
 mod day01;
 
-use advent_of_code_rust_runner::{run_all, Day};
+use advent_of_code_rust_runner::{Runner, Day};
 
 fn main() {
     env_logger::Builder::new()
@@ -12,5 +12,10 @@ fn main() {
     let days: Vec<Box<dyn Day>> = vec![
         Box::new(day01::Day01 {})
     ];
-    run_all("2025", &days);
+
+    let runner = Runner::new("2025", days).unwrap_or_else(|e| {
+        eprintln!("Failed to initialize runner: {e}");
+        std::process::exit(1);
+    });
+    runner.run();
 }
