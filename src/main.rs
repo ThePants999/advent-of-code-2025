@@ -5,6 +5,7 @@ use advent_of_code_rust_runner::{run_all, Day};
 fn main() {
     env_logger::Builder::new()
         .filter_level(log::LevelFilter::Warn)
+        .filter_module("advent_of_code_rust_runner", log::LevelFilter::Info)
         .parse_default_env()
         .init();
 
