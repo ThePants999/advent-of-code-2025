@@ -1,4 +1,5 @@
 use advent_of_code_rust_runner::DayImplementation;
+use anyhow::{Result, Context};
 
 pub struct Day01;
 
@@ -24,17 +25,20 @@ L82" }
     fn example_part_1_result(&self) -> Self::Output<'static> { 3 }
     fn example_part_2_result(&self) -> Self::Output<'static> { 6 }
 
-    fn execute_part_1<'a>(&self, input: &'a str) -> (Self::Output<'a>, Self::Context<'a>) {
+    fn execute_part_1<'a>(&self, input: &'a str) -> Result<(Self::Output<'a>, Self::Context<'a>)> {
         let turns: Vec<i32> = input.lines()
-            .map(|line| {
-                let distance: i32 = line[1..].parse().unwrap();
-                match line.as_bytes()[0] {
+            .map(|line| -> Result<i32> {
+                if line.is_empty() {
+                    anyhow::bail!("Invalid input: empty line");
+                }
+                let distance: i32 = line[1..].parse().context("Invalid input: distance not a number")?;
+                Ok(match line.as_bytes()[0] {
                     b'L' => -distance,
                     b'R' => distance,
-                    _ => panic!("Invalid direction"),
-                }
+                    _ => anyhow::bail!("Invalid input: first letter not L or R"),
+                })
             })
-            .collect();
+            .collect::<Result<Vec<i32>>>()?;
 
         let mut password: u32 = 0;
         let mut dial: i32 = 50;
@@ -44,16 +48,16 @@ L82" }
                 password += 1;
             }
         }
-        (password, Day01Context { turns })
+        Ok((password, Day01Context { turns }))
     }
 
-    fn execute_part_2<'a>(&self, _input: &'a str, context: Self::Context<'a>) -> Self::Output<'a> {
+    fn execute_part_2<'a>(&self, _input: &'a str, context: Self::Context<'a>) -> Result<Self::Output<'a>> {
         let mut password: u32 = 0;
         let mut dial: i32 = 50;
         for turn in context.turns {
             let new_dial = dial + turn;
             log::debug!("Turn: {}, Dial: {} -> {}", turn, dial, new_dial);
-            let mut password_delta = (new_dial / 100 - dial / 100).abs() as u32;
+            let mut password_delta = (new_dial / 100 - dial / 100).unsigned_abs();
             log::debug!("Password increase from hundreds change: {}", password_delta);
             if (dial < 0 && new_dial >= 0) || (dial > 0 && new_dial <= 0) {
                 log::debug!("Crossed zero line, adding extra 1 to password");
@@ -62,6 +66,6 @@ L82" }
             password += password_delta;
             dial = new_dial % 100;
         }
-        password
+        Ok(password)
     }
 }
