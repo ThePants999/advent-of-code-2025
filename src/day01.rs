@@ -12,7 +12,7 @@ impl DayImplementation for Day01 {
     type Context<'a> = Day01Context;
 
     fn day(&self) -> u8 { 1 }
-    fn example_input(&self) -> &'static str { "L68
+    fn example_input(&self) -> Option<&'static str> { Some("L68
 L30
 R48
 L5
@@ -21,9 +21,9 @@ L55
 L1
 L99
 R14
-L82" }
-    fn example_part_1_result(&self) -> Self::Output<'static> { 3 }
-    fn example_part_2_result(&self) -> Self::Output<'static> { 6 }
+L82") }
+    fn example_part_1_result(&self) -> Option<Self::Output<'static>> { Some(3) }
+    fn example_part_2_result(&self) -> Option<Self::Output<'static>> { Some(6) }
 
     fn execute_part_1<'a>(&self, input: &'a str) -> Result<(Self::Output<'a>, Self::Context<'a>)> {
         let turns: Vec<i32> = input.lines()
