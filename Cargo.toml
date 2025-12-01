@@ -1,5 +1,5 @@
 [package]
-name = "advent_of_code_2025"
+name = "advent-of-code-2025"
 version = "0.1.0"
 edition = "2024"
 authors = ["Chris Paterson <chris@chrispaterson.co.uk>"]
@@ -9,7 +9,7 @@ license-file = "LICENSE"
 repository = "https://github.com/ThePants999/advent-of-code-2025"
 
 [dependencies]
-advent_of_code_rust_runner = { path = "../advent-of-code-rust-runner" }
+advent-of-code-rust-runner = "0.2"
 env_logger = "0.11"
 log = "0.4"
 anyhow = "1.0"

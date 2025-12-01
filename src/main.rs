@@ -1,4 +1,5 @@
 mod day01;
+mod day02;
 
 use advent_of_code_rust_runner::{Runner, Day};
 
@@ -10,7 +11,8 @@ fn main() {
         .init();
 
     let days: Vec<Box<dyn Day>> = vec![
-        Box::new(day01::Day01 {})
+        Box::new(day01::Day01 {}),
+        Box::new(day02::Day02 {}),
     ];
 
     let runner = Runner::new("2025", days).unwrap_or_else(|e| {

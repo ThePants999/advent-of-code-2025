@@ -3,18 +3,20 @@
 version = 4
 
 [[package]]
-name = "advent_of_code_2025"
+name = "advent-of-code-2025"
 version = "0.1.0"
 dependencies = [
- "advent_of_code_rust_runner",
+ "advent-of-code-rust-runner",
  "anyhow",
  "env_logger",
  "log",
 ]
 
 [[package]]
-name = "advent_of_code_rust_runner"
-version = "0.1.0"
+name = "advent-of-code-rust-runner"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d8c6e26c0319086ff49c30aa60a2a9e9a05612e59ea516fe78b33f70a848cb9"
 dependencies = [
  "anyhow",
  "clap",

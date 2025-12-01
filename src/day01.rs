@@ -1,5 +1,4 @@
-use advent_of_code_rust_runner::DayImplementation;
-use anyhow::{Result, Context};
+use advent_of_code_rust_runner::{DayImplementation, Result, Context};
 
 pub struct Day01;
 
