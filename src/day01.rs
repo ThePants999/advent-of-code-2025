@@ -7,6 +7,7 @@ pub struct Day01Context<'a> {
 }
 
 impl DayImplementation for Day01 {
+    type Output<'a> = &'a str;
     type Context<'a> = Day01Context<'a>;
 
     fn day(&self) -> u8 { 1 }
