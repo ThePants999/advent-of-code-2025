@@ -4,7 +4,8 @@ pub struct Day04;
 
 pub struct Day04Context {
     grid: Grid,
-    rolls: Vec<Location>
+    rolls: Vec<Location>,
+    num_rolls_removed: usize
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -163,19 +164,26 @@ impl DayImplementation for Day04 {
             }
         }
 
-        let answer = rolls
-            .iter()
-            .map(|loc| grid.adjacent_rolls(loc))
-            .filter(|&count| count < 4)
-            .count();
+        let mut num_rolls_removed = 0usize;
+        let mut remaining_rolls: Vec<Location> = Vec::with_capacity(rolls.len());
+        let mut rolls_to_remove: Vec<Location> = Vec::with_capacity(rolls.len());
+        for roll in rolls.iter() {
+            if grid.adjacent_rolls(roll) < 4 {
+                rolls_to_remove.push(*roll);
+                num_rolls_removed += 1;
+            } else {
+                remaining_rolls.push(*roll);
+            }
+        }
+        rolls_to_remove.iter().for_each(|loc| grid.remove_roll(loc));
 
-        Ok((answer, Day04Context { grid, rolls }))
+        Ok((num_rolls_removed, Day04Context { grid, rolls: remaining_rolls, num_rolls_removed }))
     }
 
     fn execute_part_2<'a>(&self, _input: &'a str, ctx: Self::Context<'a>) -> Result<Self::Output<'a>> {
         let mut grid = ctx.grid;
         let mut rolls = ctx.rolls;
-        let mut num_rolls_removed = 0;
+        let mut num_rolls_removed = ctx.num_rolls_removed;
 
         loop {
             let mut new_rolls: Vec<Location> = Vec::with_capacity(rolls.len());
