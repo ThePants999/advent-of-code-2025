@@ -1,5 +1,4 @@
 use advent_of_code_rust_runner::{DayImplementation, Result};
-use std::collections::HashSet;
 
 pub struct Day04;
 
@@ -179,19 +178,19 @@ impl DayImplementation for Day04 {
         let mut num_rolls_removed = 0;
 
         loop {
-            let mut rolls_to_remove = HashSet::new();
+            let mut new_rolls: Vec<Location> = Vec::with_capacity(rolls.len());
             for loc in rolls.iter() {
                 if grid.adjacent_rolls(loc) < 4 {
-                    rolls_to_remove.insert(*loc);
+                    num_rolls_removed += 1;
+                    grid.remove_roll(loc);
+                } else {
+                    new_rolls.push(*loc);
                 }
             }
-            if rolls_to_remove.is_empty() {
+            if new_rolls.len() == rolls.len() {
                 break;
             }
-            num_rolls_removed += rolls_to_remove.len();
-
-            rolls.retain(|loc| !rolls_to_remove.contains(&loc));
-            rolls_to_remove.iter().for_each(|loc| grid.remove_roll(loc));
+            rolls = new_rolls;
         }
         Ok(num_rolls_removed)
     }
