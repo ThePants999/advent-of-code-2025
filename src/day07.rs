@@ -1,12 +1,11 @@
 use advent_of_code_rust_runner::{DayImplementation, Result, Context};
-use std::collections::HashSet;
 
 pub struct Day07;
 
 pub struct Day07Context {
     width: usize,
     start: usize,
-    splitter_sets: Vec<HashSet<usize>>,
+    splitter_sets: Vec<Vec<usize>>,
 }
 
 impl DayImplementation for Day07 {
@@ -34,33 +33,36 @@ impl DayImplementation for Day07 {
     fn example_part_2_result(&self) -> Option<Self::Output<'static>> { Some(40) }
 
     fn execute_part_1<'a>(&self, input: &'a str) -> Result<(Self::Output<'a>, Self::Context<'a>)> {
-        let splitter_sets: Vec<HashSet<usize>> = input[1..]
+        let splitter_sets: Vec<Vec<usize>> = input
             .lines()
+            .skip(2)
+            .step_by(2)
             .map(|line| {
                 line
                     .chars()
                     .enumerate()
                     .filter(|&(_i, c)| c == '^')
                     .map(|(i, _c)| i)
-                    .collect::<HashSet<usize>>()
+                    .collect::<Vec<usize>>()
             })
-            .filter(|set| !set.is_empty())
             .collect();
 
         let first_line = input.lines().next().context("Empty input")?;
         let initial_index = first_line.find('S').context("No starting position found")?;
-        let mut beams = HashSet::from([initial_index]);
+        let mut state = vec![false; first_line.len()];
+        state[initial_index] = true;
+
         let mut splits = 0usize;
-        for splitters in &splitter_sets {
-            let split_points = beams.intersection(splitters).copied().collect::<HashSet<usize>>();
-            splits += split_points.len();
-            beams = beams
-                .difference(&split_points)
-                .copied()
-                .collect::<HashSet<usize>>()
-                .union(&split_points.iter().flat_map(|&i| [i-1, i+1]).collect::<HashSet<usize>>())
-                .copied()
-                .collect::<HashSet<usize>>();
+        for splitters in splitter_sets.iter() {
+            for splitter_ix in splitters {
+                if state[*splitter_ix] {
+                    splits += 1;
+                }
+
+                state[*splitter_ix-1] = true;
+                state[*splitter_ix+1] = true;
+                state[*splitter_ix] = false;
+            }
         }
 
         Ok((splits, Day07Context { width: first_line.len(), start: initial_index, splitter_sets }))
