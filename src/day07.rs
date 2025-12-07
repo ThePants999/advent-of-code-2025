@@ -3,9 +3,7 @@ use advent_of_code_rust_runner::{DayImplementation, Result, Context};
 pub struct Day07;
 
 pub struct Day07Context {
-    width: usize,
-    start: usize,
-    splitter_sets: Vec<Vec<usize>>,
+    state: Vec<usize>
 }
 
 impl DayImplementation for Day07 {
@@ -49,36 +47,26 @@ impl DayImplementation for Day07 {
 
         let first_line = input.lines().next().context("Empty input")?;
         let initial_index = first_line.find('S').context("No starting position found")?;
-        let mut state = vec![false; first_line.len()];
-        state[initial_index] = true;
+        let mut state = vec![0usize; first_line.len()];
+        state[initial_index] = 1;
 
         let mut splits = 0usize;
-        for splitters in splitter_sets.iter() {
+        for splitters in splitter_sets {
             for splitter_ix in splitters {
-                if state[*splitter_ix] {
+                if state[splitter_ix] > 0 {
                     splits += 1;
                 }
 
-                state[*splitter_ix-1] = true;
-                state[*splitter_ix+1] = true;
-                state[*splitter_ix] = false;
-            }
-        }
-
-        Ok((splits, Day07Context { width: first_line.len(), start: initial_index, splitter_sets }))
-    }
-
-    fn execute_part_2<'a>(&self, _input: &'a str, ctx: Self::Context<'a>) -> Result<Self::Output<'a>> {
-        let mut state = vec![0usize; ctx.width];
-        state[ctx.start] = 1;
-        for splitters in ctx.splitter_sets {
-            for splitter_ix in splitters {
                 state[splitter_ix-1] += state[splitter_ix];
                 state[splitter_ix+1] += state[splitter_ix];
                 state[splitter_ix] = 0;
             }
         }
-        let timelines = state.iter().sum();
-        Ok(timelines)
+
+        Ok((splits, Day07Context { state }))
+    }
+
+    fn execute_part_2<'a>(&self, _input: &'a str, ctx: Self::Context<'a>) -> Result<Self::Output<'a>> {
+        Ok(ctx.state.iter().sum())
     }
 }
