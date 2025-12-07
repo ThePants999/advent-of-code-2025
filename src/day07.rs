@@ -31,9 +31,11 @@ impl DayImplementation for Day07 {
     fn example_part_2_result(&self) -> Option<Self::Output<'static>> { Some(40) }
 
     fn execute_part_1<'a>(&self, input: &'a str) -> Result<(Self::Output<'a>, Self::Context<'a>)> {
-        let splitter_sets: Vec<Vec<usize>> = input
-            .lines()
-            .skip(2)
+        let mut lines = input.lines();
+        let first_line = lines.next().context("Empty input")?;
+        let initial_index = first_line.find('S').context("No starting position found")?;
+        let splitter_sets: Vec<Vec<usize>> = lines
+            .skip(1)
             .step_by(2)
             .map(|line| {
                 line
@@ -45,8 +47,6 @@ impl DayImplementation for Day07 {
             })
             .collect();
 
-        let first_line = input.lines().next().context("Empty input")?;
-        let initial_index = first_line.find('S').context("No starting position found")?;
         let mut state = vec![0usize; first_line.len()];
         state[initial_index] = 1;
 
