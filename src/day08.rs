@@ -40,7 +40,7 @@ impl Graph {
                 graph.pairs.push(pair);
             }
         }
-        graph.pairs.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
+        graph.pairs.sort_unstable_by_key(|pair| pair.distance_sq);
 
         graph
     }
@@ -85,24 +85,23 @@ impl Graph {
 struct BoxPair {
     box_a: usize,
     box_b: usize,
-    distance: f64
+    distance_sq: u64
 }
 
 struct JunctionBox {
-    x: i64,
-    y: i64,
-    z: i64,
+    x: u64,
+    y: u64,
+    z: u64,
     circuit: usize
 }
 
 impl JunctionBox {
     fn pair(&self, self_id: usize, other: &JunctionBox, other_id: usize) -> BoxPair {
-        let square_sum = ((self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2)) as f64;
-        let distance = square_sum.sqrt();
+        let distance_sq = self.x.abs_diff(other.x).pow(2) + self.y.abs_diff(other.y).pow(2) + self.z.abs_diff(other.z).pow(2);
         BoxPair {
             box_a: self_id,
             box_b: other_id,
-            distance
+            distance_sq
         }
     }
 }
@@ -143,7 +142,7 @@ impl DayImplementation for Day08 {
             graph.connect(&pair);
         }
         let mut circuits: Vec<usize> = graph.circuits.clone().iter().flatten().map(|circuit| circuit.len()).collect();
-        circuits.sort_by(|a, b| b.cmp(a));
+        circuits.select_nth_unstable_by(2, |a, b| b.cmp(a));
         let answer = circuits.iter().take(3).product();
         Ok((answer, Day08Context { graph }))
     }
