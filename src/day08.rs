@@ -17,12 +17,10 @@ impl Graph {
     fn parse(input: &str) -> Self {
         let lines: Vec<&str> = input.lines().collect();
         let num_lines = lines.len();
-        let mut graph = Graph {
-            boxes: Vec::with_capacity(num_lines),
-            circuits: Vec::with_capacity(num_lines),
-            num_circuits: num_lines,
-            pairs: Vec::with_capacity(num_lines * (num_lines - 1) / 2)
-        };
+
+        let mut boxes = Vec::with_capacity(num_lines);
+        let mut circuits = Vec::with_capacity(num_lines);
+        let mut pairs = Vec::with_capacity(num_lines * (num_lines - 1) / 2);
 
         for (id, line) in lines.iter().enumerate() {
             let mut coords = line.split(',');
@@ -32,17 +30,62 @@ impl Graph {
                 z: coords.next().unwrap().parse().unwrap(),
                 circuit: id
             };
-            graph.boxes.push(new_box);
-            graph.circuits.push(Some(vec![id]));
+            boxes.push(new_box);
+            circuits.push(Some(vec![id]));
 
             for other_id in 0..id {
-                let pair = graph.boxes[id].pair(id, &graph.boxes[other_id], other_id);
-                graph.pairs.push(pair);
+                let pair = BoxPair {
+                    box_a: id,
+                    box_b: other_id,
+                    distance_sq: boxes[id].distance_to(&boxes[other_id])
+                };
+                pairs.push(pair);
             }
         }
-        graph.pairs.sort_unstable_by_key(|pair| pair.distance_sq);
 
-        graph
+        // Okay, here's a slight cheat to speed things up.
+        //
+        // By far the most expensive part of the algorithm is sorting the pairs vector -
+        // with 1000 boxes, there are nearly 500,000 pairs to sort, which accounts for
+        // 90% of the runtime if done on the full list.
+        //
+        // However, we know that we're only going to process connections up to the point
+        // where all boxes are connected. Strictly speaking, we'd need to process the full
+        // list to know where that point is. What we do here is to make a slightly
+        // unreasonable assumption that there's a _solo_ outlier somewhere, and hence that
+        // if we find the box that is furthest away from ANY other box (i.e. furthest from
+        // its nearest neighbor), then that will be the longest distance of any edge that
+        // connects two boxes in the final connected graph.
+        //
+        // This breaks down in the case where two or more boxes are close to each other
+        // but far from all other boxes, but in practice it seems to work for my input, and
+        // for at least one other person's input that I have seen.
+        let distance_threshold = boxes
+            .iter()
+            .enumerate()
+            .map(|(id, this_box)| boxes
+                .iter()
+                .enumerate()
+                .filter(|(other_id, _)| id != *other_id )
+                .map(|(_, other_box)| this_box.distance_to(other_box))
+                .min()
+                .unwrap())
+            .max()
+            .unwrap();
+        println!("Distance threshold: {}", distance_threshold);
+
+        let mut sorted_pairs: Vec<BoxPair> = pairs
+            .into_iter()
+            .filter(|pair| pair.distance_sq <= distance_threshold)
+            .collect();
+        sorted_pairs.sort_unstable_by_key(|pair| pair.distance_sq);
+
+        Graph {
+            boxes,
+            circuits,
+            num_circuits: num_lines,
+            pairs: sorted_pairs
+        }
     }
 
     fn connect(&mut self, pair: &BoxPair) {
@@ -96,13 +139,8 @@ struct JunctionBox {
 }
 
 impl JunctionBox {
-    fn pair(&self, self_id: usize, other: &JunctionBox, other_id: usize) -> BoxPair {
-        let distance_sq = self.x.abs_diff(other.x).pow(2) + self.y.abs_diff(other.y).pow(2) + self.z.abs_diff(other.z).pow(2);
-        BoxPair {
-            box_a: self_id,
-            box_b: other_id,
-            distance_sq
-        }
+    fn distance_to(&self, other: &JunctionBox) -> u64 {
+        self.x.abs_diff(other.x).pow(2) + self.y.abs_diff(other.y).pow(2) + self.z.abs_diff(other.z).pow(2)
     }
 }
 
