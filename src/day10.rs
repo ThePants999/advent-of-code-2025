@@ -1,5 +1,5 @@
 use advent_of_code_rust_runner::{DayImplementation, Result};
-use std::collections::{VecDeque, HashSet, HashMap};
+use std::collections::{VecDeque, HashSet};
 
 pub struct Day10;
 
@@ -196,8 +196,8 @@ impl DayImplementation for Day10 {
                 }
 
                 // Step 2: back substitution.
-                let mut pivot_cols: HashMap<usize, usize> = HashMap::new();
-                pivot_cols.insert(0, 0);
+                let mut pivot_cols: Vec<Option<usize>> = vec![None; num_equations];
+                pivot_cols[0] = Some(0);
                 for row_index in (1..num_equations).rev() {
                     let pivot_col = matrix[row_index]
                         .iter()
@@ -205,7 +205,7 @@ impl DayImplementation for Day10 {
                     if let Some(col_index) = pivot_col {
                         // Normalize the pivot row by dividing by the GCD of all its entries,
                         // and ensuring the pivot column is positive.
-                        pivot_cols.insert(row_index, col_index);
+                        pivot_cols[row_index] = pivot_col;
                         let mut gcd = matrix[row_index]
                             .iter()
                             .skip(col_index)
@@ -246,17 +246,21 @@ impl DayImplementation for Day10 {
                 // of the equations.
                 let lcm = pivot_cols
                     .iter()
-                    .map(|(&row_index, &col_index)| matrix[row_index][col_index])
+                    .enumerate()
+                    .filter_map(|(row_index, &opt_col_index)| {
+                        opt_col_index.map(|col_index| matrix[row_index][col_index])
+                    })
                     .fold(1, |acc, val| num::integer::lcm(acc, val));
 
-                let mut free_variables: HashSet<usize> = HashSet::new();
+                let mut variable_is_free: Vec<bool> = vec![false; num_variables];
+
                 // We initialize the free variable coefficients to the LCM, reflecting
                 // the fact that the matrix is going to effectively end up giving us
                 // the sum of the fixed variables multiplied by the LCM, so we need
                 // to add the missing free variables.
                 let mut total_coefficients = vec![lcm; num_variables+1];
                 total_coefficients[num_variables] = 0; // Base presses
-                for (&row_index, &pivot_col) in pivot_cols.iter() {
+                for (row_index, pivot_col) in pivot_cols.iter().enumerate().filter_map(|(idx, &opt)| opt.map(|col| (idx, col))) {
                     let scale = lcm / matrix[row_index][pivot_col];
                     if scale != 1 {
                         for col_index in pivot_col..num_variables+1 {
@@ -268,7 +272,7 @@ impl DayImplementation for Day10 {
                         let coefficient = matrix[row_index][other_col_index];
                         if coefficient != 0 {
                             // This variable affects this equation, so it can't be fixed.
-                            free_variables.insert(other_col_index);
+                            variable_is_free[other_col_index] = true;
                             // Flip the sign of the coefficient, as we're moving it
                             // from the LHS of the equation to the RHS.
                             matrix[row_index][other_col_index] = -coefficient;
@@ -277,12 +281,17 @@ impl DayImplementation for Day10 {
                         }
                     }
                 }
-                let free_variables: Vec<usize> = free_variables.into_iter().collect();
+                let free_variables: Vec<usize> = variable_is_free.iter()
+                    .enumerate()
+                    .filter_map(|(idx, &is_free)| if is_free { Some(idx) } else { None })
+                    .collect();
 
                 // Step 4: establish the constraints on the free variables.
                 let constraints: Vec<Constraint> = pivot_cols
-                    .keys()
-                    .flat_map(|&row_index| {
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, opt)| opt.is_some())
+                    .flat_map(|(row_index, _)| {
                         std::iter::once(Constraint {
                             coefficients: &matrix[row_index],
                             rhs: ConstraintRHS::IsPositive
