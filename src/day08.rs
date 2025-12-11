@@ -72,7 +72,6 @@ impl Graph {
                 .unwrap())
             .max()
             .unwrap();
-        println!("Distance threshold: {}", distance_threshold);
 
         let mut sorted_pairs: Vec<BoxPair> = pairs
             .into_iter()
