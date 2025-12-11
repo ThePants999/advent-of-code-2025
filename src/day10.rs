@@ -317,15 +317,13 @@ impl DayImplementation for Day10 {
 
                 // Step 6: find the minimal non-negative assignment to the free variables
                 // that satisfies all constraints.
-                let total = find_optimal_total(
+                find_optimal_total(
                     &constraints,
                     &total_coefficients,
                     lcm,
                     &free_variables,
                     &bounds
-                ) as u32;
-                println!("Total presses for machine {}: {}", _machine_index, total);
-                total
+                ) as u32
             })
             .sum();
         Ok(total_presses)
@@ -337,17 +335,20 @@ fn calculate_bounds(
     constraints: &[Constraint],
     free_variables: &[usize],
 ) -> Vec<(i16, i16)> {
-    // Start with widest possible bounds
-    let mut bounds = vec![(0i16, i16::MAX); num_variables];
+    // Start with widest possible bounds (use i64 internally to avoid overflow)
+    let mut bounds: Vec<(i64, i64)> = vec![(0, i16::MAX as i64); num_variables];
 
-    // Tighten bounds from IsPositive constraints
+    // Tighten bounds from IsPositive constraints. The bounds must be *sound* (never
+    // exclude valid solutions), so for each variable we use the best-case
+    // contributions of the other free variables (those that make the inequality
+    // easiest to satisfy).
     for constraint in constraints {
         if let ConstraintRHS::IsPositive = constraint.rhs {
-            let constant_term = *constraint.coefficients.last().unwrap();
+            let constant_term = *constraint.coefficients.last().unwrap() as i64;
 
             // For each free variable, try to extract a bound
             for &var_idx in free_variables.iter() {
-                let coeff = constraint.coefficients[var_idx];
+                let coeff = constraint.coefficients[var_idx] as i64;
 
                 if coeff == 0 {
                     continue;
@@ -355,40 +356,41 @@ fn calculate_bounds(
 
                 // Constraint: constant + sum(coeff_i * x_i) >= 0
                 // For this variable: coeff * x_var >= -(constant + sum_others)
-
-                // Calculate sum of contributions from other free vars at their extremes
-                let mut min_others = constant_term;
-                let mut max_others = constant_term;
+                //
+                // Use the *helpful* extremes of the other variables so we never rule
+                // out a satisfiable assignment.
+                let mut best_others = constant_term;
 
                 for &other_var_idx in free_variables.iter() {
                     if other_var_idx == var_idx {
                         continue;
                     }
-                    let other_coeff = constraint.coefficients[other_var_idx];
+                    let other_coeff = constraint.coefficients[other_var_idx] as i64;
                     let (other_min, other_max) = bounds[other_var_idx];
 
                     if other_coeff > 0 {
-                        min_others = min_others.saturating_add(other_coeff.saturating_mul(other_min));
-                        max_others = max_others.saturating_add(other_coeff.saturating_mul(other_max));
+                        best_others = best_others
+                            .saturating_add(other_coeff.saturating_mul(other_max));
                     } else if other_coeff < 0 {
-                        min_others = min_others.saturating_add(other_coeff.saturating_mul(other_max));
-                        max_others = max_others.saturating_add(other_coeff.saturating_mul(other_min));
+                        best_others = best_others
+                            .saturating_add(other_coeff.saturating_mul(other_min));
                     }
                 }
 
                 // Now isolate this variable
                 if coeff > 0 {
-                    // x_var >= -max_others / coeff
-                    if let Some(numerator) = max_others.checked_neg() {
-                        let lower = ((numerator + coeff - 1) / coeff).max(0);
-                        bounds[var_idx].0 = bounds[var_idx].0.max(lower);
+                    // x_var >= ceil(-best_others / coeff)
+                    let numerator = -best_others;
+                    let lower = ((numerator + coeff - 1) / coeff).max(0);
+                    if lower > bounds[var_idx].0 {
+                        bounds[var_idx].0 = lower;
                     }
-                    // If overflow, this constraint doesn't provide a useful bound
                 } else {
-                    // x_var <= -min_others / coeff
-                    if let Some(numerator) = min_others.checked_neg() {
-                        let upper = numerator / coeff;
-                        bounds[var_idx].1 = bounds[var_idx].1.min(upper);
+                    // x_var <= floor(-best_others / coeff)  (coeff < 0)
+                    let numerator = -best_others;
+                    let upper = numerator / coeff;
+                    if upper < bounds[var_idx].1 {
+                        bounds[var_idx].1 = upper;
                     }
                 }
             }
@@ -396,6 +398,15 @@ fn calculate_bounds(
     }
 
     bounds
+        .into_iter()
+        .map(|(lo, hi)| {
+            // Clamp back into i16 space; an inverted bound simply yields an empty
+            // range in the search.
+            let lo = lo.clamp(0, i16::MAX as i64) as i16;
+            let hi = hi.clamp(0, i16::MAX as i64) as i16;
+            (lo, hi)
+        })
+        .collect()
 }
 
 fn find_optimal_total(
