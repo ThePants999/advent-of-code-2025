@@ -32,7 +32,7 @@ struct Device {
     id: usize,
     outputs: Option<Vec<usize>>,
     direct_routes_in: usize,
-    paths_to_node: [u128; NUM_SEEN_STATES], // Bitmask for seen special nodes
+    paths_to_node: [u64; NUM_SEEN_STATES], // Bitmask for seen special nodes
 }
 
 impl Device {
@@ -41,17 +41,17 @@ impl Device {
             id,
             outputs: None,
             direct_routes_in: 0,
-            paths_to_node: [0u128; NUM_SEEN_STATES],
+            paths_to_node: [0u64; NUM_SEEN_STATES],
         }
     }
 
     fn reset(&mut self) {
-        self.paths_to_node = [0u128; NUM_SEEN_STATES];
+        self.paths_to_node = [0u64; NUM_SEEN_STATES];
     }
 }
 
 impl DayImplementation for Day11 {
-    type Output<'a> = u128;
+    type Output<'a> = u64;
     type Context<'a> = Day11Context;
 
     fn day(&self) -> u8 { 11 }
@@ -222,7 +222,7 @@ fn count_paths(
     from_idx: usize,
     to_idx: usize,
     seen_requirement: Option<usize>
-) -> u128 {
+) -> u64 {
     devices[from_idx].paths_to_node[SEEN_NEITHER] = 1;
 
     for &device_index in ordering.iter() {
