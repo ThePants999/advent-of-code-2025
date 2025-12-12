@@ -1,0 +1,12 @@
+[build]
+# Link against the OR-Tools protobuf at build time and embed an rpath so the
+# loader can find libortools at runtime.
+rustflags = [
+  "-Clink-arg=-L/opt/ortools/lib",
+  "-Clink-arg=-lprotobuf",
+  "-Clink-arg=-Wl,-rpath,/opt/ortools/lib",
+]
+
+[env]
+# Needed so OR_PROTO_DLL resolves when compiling the C++ shim in cp_sat.
+CXXFLAGS = "-DOR_PROTO_DLL="
